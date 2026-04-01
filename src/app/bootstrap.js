@@ -1,7 +1,8 @@
 import { mountRoot } from "../engine/core/mountRoot.js";
+import { useEffect } from "../engine/hooks/useEffect.js";
 import { useMemo } from "../engine/hooks/useMemo.js";
 import { useState } from "../engine/hooks/useState.js";
-import { NicknamePage, QuestionPage, ResultPage, StartPage } from "./components/pages.js";
+import { LoadingPage, NicknamePage, QuestionPage, ResultPage, StartPage } from "./components/pages.js";
 import { quizConfig, quizQuestions, quizResults } from "./data/index.js";
 import { evaluateQuizResult } from "./domain/quiz-logic.js";
 
@@ -40,6 +41,24 @@ function App() {
     if (!calculated.result?.bestMatch) return null;
     return quizResults.find((item) => item.id === calculated.result.bestMatch) || null;
   }, [calculated.result]);
+
+  useEffect(() => {
+    if (appState.screen !== "loading") return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      setAppState((prev) => {
+        if (prev.screen !== "loading") return prev;
+        return {
+          ...prev,
+          screen: "result",
+        };
+      });
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [appState.screen]);
 
   const startConfig = {
     ...quizConfig,
@@ -129,7 +148,7 @@ function App() {
       if (prev.answers.length !== quizQuestions.length) return prev;
       return {
         ...prev,
-        screen: "result",
+        screen: "loading",
       };
     });
   };
@@ -178,6 +197,12 @@ function App() {
       onPrevQuestion: handlePrevQuestion,
       onNextQuestion: handleNextQuestion,
       onFinishQuiz: handleFinishQuiz,
+    });
+  }
+
+  if (appState.screen === "loading") {
+    return LoadingPage({
+      nickname: appState.nickname,
     });
   }
 
